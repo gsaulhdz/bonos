@@ -16,13 +16,15 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 def get_db():
-    url = urlparse(DATABASE_URL)
+    db_url = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    url = urlparse(db_url)
     conn = pg8000.native.Connection(
-        user=url.username,
-        password=url.password,
-        host=url.hostname,
-        port=url.port or 5432,
-        database=url.path.lstrip('/')
+        user=url.username or 'postgres',
+        password=url.password or '',
+        host=url.hostname or 'localhost',
+        port=int(url.port) if url.port else 5432,
+        database=url.path.lstrip('/') or 'railway',
+        ssl_context=True
     )
     return conn
 
