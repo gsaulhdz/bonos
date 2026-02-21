@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Bonos · Mesa de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14;--surface:#151820;--surface2:#1c2030;--border:#252a3a;
+    --accent:#4f8ef7;--accent2:#7c5cbf;--green:#34d39a;--red:#f74f6a;
+    --yellow:#f7c34f;--text:#e8eaf0;--muted:#6b7290;
+    --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+  .shell{display:flex;min-height:100vh;}
+  .sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;}
+  .sidebar-logo{padding:28px 20px 20px;border-bottom:1px solid var(--border);}
+  .sidebar-logo .brand{font-family:var(--display);font-size:16px;font-weight:800;color:var(--text);}
+  .sidebar-logo .sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px;letter-spacing:1px;text-transform:uppercase;}
+  .sidebar-nav{padding:16px 12px;flex:1;}
+  .nav-section{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin:16px 0 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);font-weight:500;transition:all 0.15s;margin-bottom:2px;}
+  .nav-item:hover{background:var(--surface2);color:var(--text);}
+  .nav-item.active{background:rgba(79,142,247,0.12);color:var(--accent);}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center;}
+  .main{margin-left:220px;flex:1;}
+  .topbar{padding:20px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:50;}
+  .topbar-title{font-family:var(--display);font-size:20px;font-weight:700;}
+  .topbar-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .content{padding:28px 32px;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;}
+  .panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .panel-title{font-family:var(--display);font-size:14px;font-weight:700;}
+  .panel-body{padding:20px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;}
+  .stat-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .stat-value{font-family:var(--display);font-size:28px;font-weight:800;}
+  .stat-value.green{color:var(--green);}.stat-value.red{color:var(--red);}.stat-value.blue{color:var(--accent);}.stat-value.purple{color:var(--accent2);}
+  .form-group{margin-bottom:16px;}
+  .form-label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;}
+  .form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;transition:border-color 0.15s;}
+  .form-input:focus,.form-select:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface2);}
+  .btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--sans);transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:#3a7ae0;}
+  .btn-success{background:var(--green);color:#0d1a14;}.btn-success:hover{background:#28c488;}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}.btn-ghost:hover{background:var(--border);}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;padding:10px 14px;font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+  tbody tr:hover{background:var(--surface2);}
+  tbody td{padding:12px 14px;font-size:13px;}
+  tbody tr:last-child{border-bottom:none;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono);font-weight:500;}
+  .badge-green{background:rgba(52,211,154,0.12);color:var(--green);}
+  .badge-red{background:rgba(247,79,106,0.12);color:var(--red);}
+  .badge-yellow{background:rgba(247,195,79,0.12);color:var(--yellow);}
+  .badge-blue{background:rgba(79,142,247,0.12);color:var(--accent);}
+  .badge-purple{background:rgba(124,92,191,0.12);color:var(--accent2);}
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--surface2);}
+  .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(79,142,247,0.05);}
+  .upload-zone .uz-icon{font-size:28px;margin-bottom:8px;}
+  .upload-zone .uz-title{font-size:13px;font-weight:500;margin-bottom:4px;}
+  .upload-zone .uz-sub{font-size:11px;color:var(--muted);}
+  .upload-zone input[type=file]{display:none;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:90%;max-width:600px;max-height:85vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.2s;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .modal-title{font-family:var(--display);font-size:16px;font-weight:700;}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+  .modal-body{padding:24px;}
+  .toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:slideIn 0.3s ease;}
+  .toast.success{border-left:3px solid var(--green);}.toast.error{border-left:3px solid var(--red);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .view{display:none;}.view.active{display:block;}
+  .detail-item{padding:14px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+  .detail-item:last-child{border-bottom:none;}
+  .detail-key{font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:0.5px;}
+  .detail-val{font-size:13px;text-align:right;max-width:60%;}
+  .filters{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;}
+  .filters .form-group{margin-bottom:0;min-width:160px;}
+  .empty-state{text-align:center;padding:48px 24px;color:var(--muted);}
+  .empty-state .es-icon{font-size:40px;margin-bottom:12px;}
+  .empty-state .es-text{font-size:14px;}
+  .text-muted{color:var(--muted);}.text-sm{font-size:12px;}.mono{font-family:var(--mono);}
+  .mt-16{margin-top:16px;}.flex{display:flex;}.items-center{align-items:center;}.gap-8{gap:8px;}.gap-12{gap:12px;}.justify-between{justify-content:space-between;}
+  .bono-score{font-family:var(--mono);font-size:22px;font-weight:500;}
+  .bono-score.alta{color:var(--green);}.bono-score.media{color:var(--yellow);}.bono-score.baja{color:var(--red);}
+</style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay" id="modalDetalle">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalNombre">Detalle del trabajador</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO PERIODO -->
+<div class="modal-overlay" id="modalPeriodo">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo Periodo</span>
+      <button class="modal-close" onclick="document.getElementById('modalPeriodo').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre del periodo</label><input class="form-input" id="pNombre" placeholder="Ej: ENERO 2026 Q1"></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Mes</label>
+          <select class="form-select" id="pMes">
+            <option>ENERO</option><option>FEBRERO</option><option>MARZO</option><option>ABRIL</option>
+            <option>MAYO</option><option>JUNIO</option><option>JULIO</option><option>AGOSTO</option>
+            <option>SEPTIEMBRE</option><option>OCTUBRE</option><option>NOVIEMBRE</option><option>DICIEMBRE</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Año</label><input class="form-input" id="pAnio" type="number" value="2026"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" id="pInicio" type="date"></div>
+        <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="pFin" type="date"></div>
+      </div>
+      <button class="btn btn-primary" onclick="crearPeriodo()" style="width:100%">Crear Periodo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO TRABAJADOR -->
+<div class="modal-overlay" id="modalTrabajador">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Agregar Trabajador</span>
+      <button class="modal-close" onclick="document.getElementById('modalTrabajador').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Número de Nómina</label><input class="form-input" id="tNomina" placeholder="Ej: 1012034"></div>
+        <div class="form-group"><label class="form-label">Sucursal (número)</label><input class="form-input" id="tSucursal" placeholder="Ej: 1"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="tNombre" placeholder="APELLIDO APELLIDO NOMBRE"></div>
+      <div class="form-group"><label class="form-label">Nombre Sucursal</label><input class="form-input" id="tNombreSuc" placeholder="Ej: HIDALGO"></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Puesto</label>
+          <select class="form-select" id="tPuesto">
+            <option>ENCARGADO DE MESA DE CONTROL</option>
+            <option>CAPTURISTA</option>
+            <option>RECIBO DE PROVEEDORES</option>
+            <option>ROTULISTA</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Área</label>
+          <select class="form-select" id="tArea">
+            <option>MESA DE CONTROL</option><option>RECIBO</option><option>ROTULOS</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="guardarTrabajador()" style="width:100%">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">BonusCtrl</div>
+      <div class="sub">Mesa de Control</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="showView('dashboard',this)"><span class="icon">▦</span><span>Dashboard</span></div>
+      <div class="nav-item" onclick="showView('reporte',this)"><span class="icon">📊</span><span>Reporte Bonos</span></div>
+      <div class="nav-section">Gestión</div>
+      <div class="nav-item" onclick="showView('archivos',this)"><span class="icon">📂</span><span>Cargar Archivos</span></div>
+      <div class="nav-item" onclick="showView('trabajadores',this)"><span class="icon">👥</span><span>Trabajadores</span></div>
+      <div class="nav-item" onclick="showView('periodos',this)"><span class="icon">📅</span><span>Periodos</span></div>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="topbar">
+        <div><div class="topbar-title">Dashboard</div><div class="topbar-sub">Resumen general del sistema</div></div>
+        <select class="form-select" id="dashPeriodo" style="width:220px" onchange="loadDashboard()">
+          <option value="">Seleccionar periodo...</option>
+        </select>
+      </div>
+      <div class="content">
+        <div class="grid-4">
+          <div class="stat-card"><div class="stat-label">Total Trabajadores</div><div class="stat-value blue" id="dTotal">—</div></div>
+          <div class="stat-card"><div class="stat-label">Bono Promedio</div><div class="stat-value green" id="dProm">—</div></div>
+          <div class="stat-card"><div class="stat-label">Con Afectaciones</div><div class="stat-value red" id="dAfect">—</div></div>
+          <div class="stat-card"><div class="stat-label">Con Checklist</div><div class="stat-value purple" id="dCheck">—</div></div>
+        </div>
+        <div class="grid-3 mt-16">
+          <div class="panel" style="grid-column:span 2">
+            <div class="panel-header"><span class="panel-title">Trabajadores con menor bono</span></div>
+            <div class="panel-body" id="dashBottom"><div class="empty-state"><div class="es-icon">📊</div><div class="es-text">Selecciona un periodo</div></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Promedio por Área</span></div>
+            <div class="panel-body" id="dashAreas"><div class="empty-state"><div class="es-icon">📋</div><div class="es-text">Selecciona un periodo</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTE -->
+    <div class="view" id="view-reporte">
+      <div class="topbar">
+        <div><div class="topbar-title">Reporte de Bonos</div><div class="topbar-sub">Cálculo detallado por trabajador</div></div>
+      </div>
+      <div class="content">
+        <div class="filters">
+          <div class="form-group">
+            <label class="form-label">Periodo</label>
+            <select class="form-select" id="repPeriodo"><option value="">Seleccionar...</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sucursal</label>
+            <select class="form-select" id="repSucursal"><option value="">Todas</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área</label>
+            <select class="form-select" id="repArea">
+              <option value="">Todas</option>
+              <option>MESA DE CONTROL</option><option>RECIBO</option><option>ROTULOS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Buscar</label>
+            <input class="form-input" id="repBuscar" placeholder="Nombre o nómina..." style="width:200px">
+          </div>
+          <button class="btn btn-primary" onclick="generarReporte()">Generar</button>
+          <button class="btn btn-success" id="btnExcel" onclick="descargarExcel()" style="display:none">⬇ Descargar Excel</button>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title" id="repTitulo">Resultados</span>
+            <span class="text-sm text-muted" id="repCount"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nómina</th><th>Nombre</th><th>Suc.</th><th>Puesto</th><th>Área</th>
+                  <th>Checklist</th><th>Actas</th><th>Afectaciones</th><th>Bono Final</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="repBody">
+                <tr><td colspan="10"><div class="empty-state"><div class="es-icon">📊</div><div class="es-text">Selecciona un periodo y genera el reporte</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARCHIVOS -->
+    <div class="view" id="view-archivos">
+      <div class="topbar">
+        <div><div class="topbar-title">Cargar Archivos</div><div class="topbar-sub">Sube los reportes Excel del periodo</div></div>
+      </div>
+      <div class="content">
+        <!-- Catálogo -->
+        <div class="panel" style="margin-bottom:20px;border-color:rgba(79,142,247,0.3)">
+          <div class="panel-header"><span class="panel-title">👥 Catálogo de Colaboradores</span><span class="badge badge-blue">Independiente del periodo</span></div>
+          <div class="panel-body">
+            <div class="upload-zone" onclick="triggerUpload('catalogo')" id="uz-catalogo">
+              <input type="file" accept=".xlsx" onchange="uploadFile(this, 'catalogo')">
+              <div class="uz-icon">👥</div>
+              <div class="uz-title">CAT.xlsx — Catálogo de Personal</div>
+              <div class="uz-sub">Sube el catálogo para cargar o actualizar todos los colaboradores</div>
+            </div>
+            <div id="status-catalogo" class="mt-16"></div>
+          </div>
+        </div>
+
+        <!-- Periodo -->
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-header"><span class="panel-title">Periodo al que pertenecen los archivos</span></div>
+          <div class="panel-body">
+            <div class="flex gap-12 items-center">
+              <select class="form-select" id="archPeriodo" style="max-width:300px">
+                <option value="">Selecciona el periodo...</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modalPeriodo').classList.add('open')">+ Nuevo periodo</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">📋 Checklist General</span></div>
+            <div class="panel-body">
+              <div class="upload-zone" onclick="triggerUpload('checklist')" id="uz-checklist">
+                <input type="file" accept=".xlsx" onchange="uploadFile(this, 'checklist')">
+                <div class="uz-icon">📋</div><div class="uz-title">REPORTE_CHECK_LIST.xlsx</div>
+                <div class="uz-sub">Haz clic o arrastra el archivo aquí</div>
+              </div>
+              <div id="status-checklist" class="mt-16"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">⚠️ Afectación de Bono</span></div>
+            <div class="panel-body">
+              <div class="upload-zone" onclick="triggerUpload('afectaciones')" id="uz-afectaciones">
+                <input type="file" accept=".xlsx" onchange="uploadFile(this, 'afectaciones')">
+                <div class="uz-icon">⚠️</div><div class="uz-title">AFECTACION_DE_BONO.xlsx</div>
+                <div class="uz-sub">Haz clic o arrastra el archivo aquí</div>
+              </div>
+              <div id="status-afectaciones" class="mt-16"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">📄 Actas de Incumplimiento</span></div>
+            <div class="panel-body">
+              <div class="upload-zone" onclick="triggerUpload('actas')" id="uz-actas">
+                <input type="file" accept=".xlsx" onchange="uploadFile(this, 'actas')">
+                <div class="uz-icon">📄</div><div class="uz-title">ACTA_DE_INCUMPLIMIENTO.xlsx</div>
+                <div class="uz-sub">Haz clic o arrastra el archivo aquí</div>
+              </div>
+              <div id="status-actas" class="mt-16"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">🏷️ Bono Rótulos</span></div>
+            <div class="panel-body">
+              <div class="upload-zone" onclick="triggerUpload('rotulos')" id="uz-rotulos">
+                <input type="file" accept=".xlsx" onchange="uploadFile(this, 'rotulos')">
+                <div class="uz-icon">🏷️</div><div class="uz-title">BONO_ROTULOS.xlsx</div>
+                <div class="uz-sub">Haz clic o arrastra el archivo aquí</div>
+              </div>
+              <div id="status-rotulos" class="mt-16"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRABAJADORES -->
+    <div class="view" id="view-trabajadores">
+      <div class="topbar">
+        <div><div class="topbar-title">Trabajadores</div><div class="topbar-sub">Catálogo de personal · <span id="tTotal">—</span> colaboradores</div></div>
+        <button class="btn btn-primary" onclick="document.getElementById('modalTrabajador').classList.add('open')">+ Agregar</button>
+      </div>
+      <div class="content">
+        <div class="filters">
+          <div class="form-group" style="flex:1">
+            <input class="form-input" id="tBuscar" placeholder="Buscar por nombre, nómina o sucursal..." oninput="loadTrabajadores()">
+          </div>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nómina</th><th>Nombre</th><th>Suc.</th><th>Nombre Suc.</th><th>Puesto</th><th>Área</th><th></th></tr></thead>
+              <tbody id="tBody">
+                <tr><td colspan="7"><div class="empty-state"><div class="es-icon">👥</div><div class="es-text">Carga el catálogo en "Cargar Archivos" para poblar este directorio automáticamente.</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERIODOS -->
+    <div class="view" id="view-periodos">
+      <div class="topbar">
+        <div><div class="topbar-title">Periodos</div><div class="topbar-sub">Gestión de quincenas y cortes</div></div>
+        <button class="btn btn-primary" onclick="document.getElementById('modalPeriodo').classList.add('open')">+ Nuevo periodo</button>
+      </div>
+      <div class="content">
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Nombre</th><th>Mes</th><th>Año</th><th>Inicio</th><th>Fin</th></tr></thead>
+              <tbody id="perBody">
+                <tr><td colspan="6"><div class="empty-state"><div class="es-icon">📅</div><div class="es-text">No hay periodos. Crea uno para comenzar.</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let periodos = [];
+
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'trabajadores') loadTrabajadores();
+  if (name === 'periodos') loadPeriodosTable();
+  if (name === 'dashboard') loadDashboard();
+}
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+async function loadPeriodos() {
+  const res = await fetch('/api/periodos');
+  periodos = await res.json();
+  const opts = periodos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+  ['dashPeriodo','repPeriodo','archPeriodo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = '<option value="">Seleccionar periodo...</option>' + opts;
+    if (prev) el.value = prev;
+  });
+}
+
+async function crearPeriodo() {
+  const data = { nombre: document.getElementById('pNombre').value, mes: document.getElementById('pMes').value, anio: parseInt(document.getElementById('pAnio').value), fecha_inicio: document.getElementById('pInicio').value, fecha_fin: document.getElementById('pFin').value };
+  if (!data.nombre) { toast('El nombre es requerido', 'error'); return; }
+  const res = await fetch('/api/periodos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const r = await res.json();
+  if (r.success) { toast('Periodo creado'); document.getElementById('modalPeriodo').classList.remove('open'); loadPeriodos(); }
+  else toast(r.error, 'error');
+}
+
+async function loadPeriodosTable() {
+  const res = await fetch('/api/periodos');
+  const data = await res.json();
+  const tbody = document.getElementById('perBody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="es-icon">📅</div><div class="es-text">No hay periodos.</div></div></td></tr>'; return; }
+  tbody.innerHTML = data.map(p => `<tr><td class="mono text-muted">#${p.id}</td><td><strong>${p.nombre}</strong></td><td>${p.mes}</td><td>${p.anio}</td><td class="text-muted">${p.fecha_inicio||'—'}</td><td class="text-muted">${p.fecha_fin||'—'}</td></tr>`).join('');
+}
+
+function triggerUpload(tipo) {
+  document.querySelector(`#uz-${tipo} input`).click();
+}
+
+async function uploadFile(input, tipo) {
+  const file = input.files[0];
+  if (!file) return;
+  let periodoId = '';
+  if (tipo !== 'catalogo') {
+    periodoId = document.getElementById('archPeriodo').value;
+    if (!periodoId) { toast('Selecciona un periodo primero', 'error'); return; }
+  }
+  const statusEl = document.getElementById(`status-${tipo}`);
+  statusEl.innerHTML = `<div class="text-muted text-sm">Procesando ${file.name}...</div>`;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('tipo', tipo);
+  fd.append('periodo_id', periodoId);
+  try {
+    const res = await fetch('/api/upload', { method:'POST', body: fd });
+    const r = await res.json();
+    if (r.success) {
+      if (tipo === 'catalogo') {
+        statusEl.innerHTML = `<div class="badge badge-green">✓ ${r.insertados} nuevos · ${r.actualizados} actualizados</div>`;
+        toast(`Catálogo cargado: ${r.registros} colaboradores`);
+      } else {
+        statusEl.innerHTML = `<div class="badge badge-green">✓ ${r.registros} registros procesados</div>`;
+        toast(`${file.name} cargado exitosamente`);
+      }
+      loadSucursales();
+    } else {
+      statusEl.innerHTML = `<div class="badge badge-red">Error: ${r.error}</div>`;
+      toast(r.error, 'error');
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<div class="badge badge-red">Error de conexión</div>`;
+    toast('Error de conexión', 'error');
+  }
+}
+
+async function loadTrabajadores() {
+  const q = document.getElementById('tBuscar').value;
+  const res = await fetch(`/api/trabajadores?q=${encodeURIComponent(q)}`);
+  const data = await res.json();
+  document.getElementById('tTotal').textContent = data.length;
+  const tbody = document.getElementById('tBody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="es-icon">👥</div><div class="es-text">No se encontraron trabajadores.</div></div></td></tr>'; return; }
+  const areaColor = {'MESA DE CONTROL':'blue','RECIBO':'purple','ROTULOS':'yellow'};
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td class="mono">${t.nomina}</td>
+      <td><strong>${t.nombre}</strong></td>
+      <td class="mono text-muted">${t.sucursal}</td>
+      <td class="text-muted text-sm">${t.nombre_suc||'—'}</td>
+      <td class="text-sm">${t.puesto}</td>
+      <td><span class="badge badge-${areaColor[t.area]||'blue'}">${t.area}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="eliminarTrabajador(${t.id},'${t.nombre}')">Eliminar</button></td>
+    </tr>`).join('');
+}
+
+async function guardarTrabajador() {
+  const puesto = document.getElementById('tPuesto').value;
+  const data = {
+    nomina: document.getElementById('tNomina').value,
+    nombre: document.getElementById('tNombre').value.toUpperCase(),
+    sucursal: document.getElementById('tSucursal').value,
+    nombre_suc: document.getElementById('tNombreSuc').value.toUpperCase(),
+    puesto: puesto,
+    area: document.getElementById('tArea').value
+  };
+  if (!data.nomina || !data.nombre) { toast('Nómina y nombre son requeridos', 'error'); return; }
+  const res = await fetch('/api/trabajadores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const r = await res.json();
+  if (r.success) { toast('Trabajador guardado'); document.getElementById('modalTrabajador').classList.remove('open'); loadTrabajadores(); }
+  else toast(r.error, 'error');
+}
+
+async function eliminarTrabajador(id, nombre) {
+  if (!confirm(`¿Eliminar a ${nombre}?`)) return;
+  await fetch(`/api/trabajadores/${id}`, { method:'DELETE' });
+  toast('Trabajador eliminado');
+  loadTrabajadores();
+}
+
+async function loadSucursales() {
+  const res = await fetch('/api/sucursales');
+  const data = await res.json();
+  const sel = document.getElementById('repSucursal');
+  sel.innerHTML = '<option value="">Todas</option>' + data.map(s => `<option value="${s.num}">${s.num} — ${s.nombre}</option>`).join('');
+}
+
+async function generarReporte() {
+  const periodoId = document.getElementById('repPeriodo').value;
+  if (!periodoId) { toast('Selecciona un periodo', 'error'); return; }
+  const sucursal = document.getElementById('repSucursal').value;
+  const area = document.getElementById('repArea').value;
+  const buscar = document.getElementById('repBuscar').value;
+  const tbody = document.getElementById('repBody');
+  tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px">Calculando bonos...</td></tr>';
+
+  let url = `/api/reporte?periodo_id=${periodoId}`;
+  if (sucursal) url += `&sucursal=${encodeURIComponent(sucursal)}`;
+  if (area) url += `&area=${encodeURIComponent(area)}`;
+  if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  document.getElementById('repCount').textContent = `${data.length} trabajadores`;
+  const periodo = periodos.find(p => p.id == periodoId);
+  document.getElementById('repTitulo').textContent = periodo ? `Resultados · ${periodo.nombre}` : 'Resultados';
+  document.getElementById('btnExcel').style.display = data.length ? 'inline-flex' : 'none';
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">No se encontraron trabajadores.</div></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(t => {
+    const bono = t.bono_final;
+    const cls = bono >= 90 ? 'alta' : bono >= 70 ? 'media' : 'baja';
+    const afectStr = t.total_afectaciones ? `<span style="color:var(--red);font-family:var(--mono)">${t.total_afectaciones}%</span>` : '<span class="text-muted">—</span>';
+    const checkStr = t.checklist_calificacion ? `<span class="mono">${t.checklist_calificacion}%</span>${t.checklist_heredado ? `<br><span class="text-muted" style="font-size:10px">(hereda ${t.checklist_heredado})</span>` : ''}` : '<span class="text-muted text-sm">Sin checklist</span>';
+    const actasStr = t.actas && t.actas.length ? `<span style="color:var(--yellow);font-family:var(--mono)">${t.actas.length} acta${t.actas.length>1?'s':''}</span>` : '<span class="text-muted">—</span>';
+    return `<tr>
+      <td class="mono text-muted">${t.nomina}</td>
+      <td><strong>${t.nombre||'—'}</strong></td>
+      <td class="mono">${t.sucursal}</td>
+      <td class="text-sm">${t.puesto}</td>
+      <td><span class="badge badge-blue">${t.area}</span></td>
+      <td>${checkStr}</td>
+      <td>${actasStr}</td>
+      <td>${afectStr}</td>
+      <td><span class="bono-score ${cls}">${bono}%</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick='verDetalle(${JSON.stringify(t)})'>Ver</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function descargarExcel() {
+  const periodoId = document.getElementById('repPeriodo').value;
+  const sucursal = document.getElementById('repSucursal').value;
+  const area = document.getElementById('repArea').value;
+  const buscar = document.getElementById('repBuscar').value;
+  let url = `/api/reporte/excel?periodo_id=${periodoId}`;
+  if (sucursal) url += `&sucursal=${encodeURIComponent(sucursal)}`;
+  if (area) url += `&area=${encodeURIComponent(area)}`;
+  if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+  window.open(url, '_blank');
+}
+
+function verDetalle(t) {
+  document.getElementById('modalNombre').textContent = t.nombre || 'Trabajador';
+  const bono = t.bono_final;
+  const cls = bono >= 90 ? 'alta' : bono >= 70 ? 'media' : 'baja';
+  let html = `
+    <div class="detail-item"><span class="detail-key">Nómina</span><span class="detail-val mono">${t.nomina}</span></div>
+    <div class="detail-item"><span class="detail-key">Sucursal</span><span class="detail-val mono">${t.sucursal} ${t.nombre_suc||''}</span></div>
+    <div class="detail-item"><span class="detail-key">Puesto</span><span class="detail-val">${t.puesto}</span></div>
+    <div class="detail-item"><span class="detail-key">Área</span><span class="detail-val">${t.area}</span></div>
+    <div class="detail-item"><span class="detail-key">Bono Base</span><span class="detail-val">${t.bono_base}%</span></div>`;
+  if (t.checklist_calificacion !== null) {
+    html += `<div class="detail-item"><span class="detail-key">Checklist${t.checklist_heredado ? ` (${t.checklist_heredado})` : ''}</span><span class="detail-val">${t.checklist_calificacion}%</span></div>`;
+  }
+  if (t.area === 'ROTULOS' && t.bono_rotulos_externo !== null) {
+    html += `<div class="detail-item"><span class="detail-key">Calif. externa rótulos</span><span class="detail-val">${t.bono_rotulos_externo}% / 50</span></div>`;
+  }
+  if (t.actas && t.actas.length) {
+    html += `<div style="margin:16px 0 8px"><strong style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase">ACTAS DE INCUMPLIMIENTO</strong></div>`;
+    t.actas.forEach(a => {
+      html += `<div style="background:var(--surface2);border:1px solid rgba(247,195,79,0.2);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div class="flex justify-between items-center">
+          <span class="text-sm mono">Folio ${a.folio} · ${a.fecha}</span>
+          <span style="color:var(--yellow);font-family:var(--mono)">${a.porcentaje}%</span>
+        </div>
+        <div class="text-sm text-muted" style="margin-top:4px">${a.procedimiento}</div>
+        <div class="text-sm" style="margin-top:4px">${a.observaciones}</div>
+      </div>`;
+    });
+  }
+  if (t.afectaciones && t.afectaciones.length) {
+    html += `<div style="margin:16px 0 8px"><strong style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase">AFECTACIONES DE BONO</strong></div>`;
+    t.afectaciones.forEach(a => {
+      html += `<div style="background:var(--surface2);border:1px solid rgba(247,79,106,0.2);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div class="flex justify-between items-center">
+          <span class="text-sm mono">Folio ${a.folio} · ${a.fecha}</span>
+          <span style="color:var(--red);font-family:var(--mono)">${a.porcentaje}%</span>
+        </div>
+        <div class="text-sm" style="margin-top:6px">${a.observacion}</div>
+      </div>`;
+    });
+  }
+  html += `<div style="margin-top:20px;padding:20px;background:var(--surface2);border-radius:10px;text-align:center">
+    <div style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">BONO FINAL DEL PERIODO</div>
+    <div class="bono-score ${cls}" style="font-size:40px">${bono}%</div>
+    <div class="text-muted text-sm" style="margin-top:6px">Base ${t.bono_base}% ${t.total_afectaciones ? `— Afectaciones ${Math.abs(t.total_afectaciones)}%` : ''}</div>
+  </div>`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalDetalle').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalDetalle').classList.remove('open'); }
+
+async function loadDashboard() {
+  const periodoId = document.getElementById('dashPeriodo').value;
+  if (!periodoId) return;
+  const res = await fetch(`/api/reporte?periodo_id=${periodoId}`);
+  const data = await res.json();
+  if (!data.length) return;
+  const total = data.length;
+  const prom = (data.reduce((s,t) => s + t.bono_final, 0) / total).toFixed(1);
+  const conAfect = data.filter(t => (t.afectaciones&&t.afectaciones.length)||(t.actas&&t.actas.length)).length;
+  const conCheck = data.filter(t => t.checklist_aplicado).length;
+  document.getElementById('dTotal').textContent = total;
+  document.getElementById('dProm').textContent = prom + '%';
+  document.getElementById('dAfect').textContent = conAfect;
+  document.getElementById('dCheck').textContent = conCheck;
+  const bottom = [...data].sort((a,b) => a.bono_final - b.bono_final).slice(0, 6);
+  document.getElementById('dashBottom').innerHTML = bottom.map(t => {
+    const cls = t.bono_final >= 90 ? 'alta' : t.bono_final >= 70 ? 'media' : 'baja';
+    return `<div class="detail-item">
+      <div><div style="font-size:13px;font-weight:500">${t.nombre||t.nomina}</div><div class="text-sm text-muted">Suc. ${t.sucursal} · ${t.area}</div></div>
+      <span class="bono-score ${cls}">${t.bono_final}%</span>
+    </div>`;
+  }).join('');
+  const areas = ['MESA DE CONTROL','RECIBO','ROTULOS'];
+  document.getElementById('dashAreas').innerHTML = areas.map(area => {
+    const grupo = data.filter(t => t.area === area);
+    if (!grupo.length) return '';
+    const promA = (grupo.reduce((s,t) => s + t.bono_final, 0) / grupo.length).toFixed(1);
+    const cls = promA >= 90 ? 'alta' : promA >= 70 ? 'media' : 'baja';
+    return `<div class="detail-item">
+      <div><div style="font-size:13px;font-weight:500">${area}</div><div class="text-sm text-muted">${grupo.length} trabajadores</div></div>
+      <span class="bono-score ${cls}">${promA}%</span>
+    </div>`;
+  }).join('');
+}
+
+window.addEventListener('load', async () => {
+  await loadPeriodos();
+  await loadSucursales();
+});
+</script>
+</body>
+</html>
