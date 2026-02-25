@@ -13,17 +13,18 @@ UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_DIR
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
-
 def get_db():
-    db_url = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    raw_url = os.environ.get('DATABASE_URL', '')
+    if not raw_url:
+        raise Exception('DATABASE_URL no esta configurada')
+    db_url = raw_url.replace('postgres://', 'postgresql://', 1)
     url = urlparse(db_url)
     conn = pg8000.native.Connection(
-        user=url.username or 'postgres',
-        password=url.password or '',
-        host=url.hostname or 'localhost',
+        user=url.username,
+        password=url.password,
+        host=url.hostname,
         port=int(url.port) if url.port else 5432,
-        database=url.path.lstrip('/') or 'railway',
+        database=url.path.lstrip('/'),
         ssl_context=True
     )
     return conn
