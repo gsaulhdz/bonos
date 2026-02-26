@@ -575,7 +575,8 @@ async function generarReporte() {
     const cls = bono >= 90 ? 'alta' : bono >= 70 ? 'media' : 'baja';
     const afectStr = t.total_afectaciones ? `<span style="color:var(--red);font-family:var(--mono)">${t.total_afectaciones}%</span>` : '<span class="text-muted">—</span>';
     const checkStr = t.checklist_calificacion ? `<span class="mono">${t.checklist_calificacion}%</span>${t.checklist_heredado ? `<br><span class="text-muted" style="font-size:10px">(hereda ${t.checklist_heredado})</span>` : ''}` : '<span class="text-muted text-sm">Sin checklist</span>';
-    const actasStr = t.actas && t.actas.length ? `<span style="color:var(--yellow);font-family:var(--mono)">${t.actas.length} acta${t.actas.length>1?'s':''}</span>` : '<span class="text-muted">—</span>';
+    const actasTotalPct = t.actas && t.actas.length ? t.actas.reduce((s,a) => s + a.porcentaje, 0) : 0;
+    const actasStr = t.actas && t.actas.length ? `<span style="color:var(--yellow);font-family:var(--mono)">${t.actas.length} acta${t.actas.length>1?'s':''}</span><br><span style="color:var(--red);font-family:var(--mono);font-size:11px">${actasTotalPct}%</span>` : '<span class="text-muted">—</span>';
     return `<tr>
       <td class="mono text-muted">${t.nomina}</td>
       <td><strong>${t.nombre||'—'}</strong></td>
