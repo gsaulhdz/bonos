@@ -266,12 +266,18 @@ def calcular_bono_trabajador(nomina, sucursal, puesto, area, periodo_id):
         cal_rot = get_checklist_suc(suc_num, 'ROTUL', periodo_id, conn)
         br_rows = conn.run("SELECT total FROM bono_rotulos WHERE periodo_id=:pid AND sucursal ILIKE :suc LIMIT 1",
                            pid=int(periodo_id), suc=f'%{suc_num}%')
-        checklist_pct = float(cal_rot) * 100 if cal_rot is not None else 100.0
         externo_pct = float(br_rows[0][0]) * 100 if br_rows else 50.0
-        resultado['checklist_aplicado'] = cal_rot is not None
-        resultado['checklist_calificacion'] = round(checklist_pct, 2)
         resultado['bono_rotulos_externo'] = round(externo_pct, 2)
-        resultado['bono_base'] = round((checklist_pct/100)*50 + externo_pct, 2)
+        if cal_rot is not None:
+            checklist_pct = float(cal_rot) * 100
+            resultado['checklist_aplicado'] = True
+            resultado['checklist_calificacion'] = round(checklist_pct, 2)
+            resultado['bono_base'] = round((checklist_pct/100)*50 + externo_pct, 2)
+        else:
+            # Sin checklist interno: solo calificacion externa ocupa el 50% disponible
+            resultado['checklist_aplicado'] = False
+            resultado['checklist_calificacion'] = None
+            resultado['bono_base'] = round(externo_pct, 2)
 
     elif area == 'RECIBO':
         cal = get_checklist_suc(suc_num, 'RECIBO', periodo_id, conn)
@@ -504,7 +510,10 @@ def exportar_excel():
     conn.close()
     reporte = get_reporte_data(periodo_id, request.args.get('sucursal',''), request.args.get('area',''), request.args.get('buscar',''))
     excel = generar_excel_reporte(reporte, nombre_periodo)
-    return send_file(excel, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    tmp_path = os.path.join(UPLOAD_DIR, f'reporte_tmp.xlsx')
+    with open(tmp_path, 'wb') as f:
+        f.write(excel.read())
+    return send_file(tmp_path, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                      as_attachment=True, download_name=f'Bonos_{nombre_periodo.replace(" ","_")}.xlsx')
 
 @app.route('/api/sucursales', methods=['GET'])
